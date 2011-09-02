@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
 
 define('PARSE_APPLICATION_ID', '<your app id>');
 define('PARSE_APP_MASTERKEY', '<your master key>');
@@ -7,7 +7,7 @@ define('PARSE_APP_MASTERKEY', '<your master key>');
 class ParseClient 
 {
 	const url = 'https://api.parse.com/1/classes';
-	const QUERY = 0;
+	const push_url = 'https://api.parse.com/1/push';
 	
 	function ParseClient()
 	{
@@ -51,13 +51,39 @@ class ParseClient
 		return $response;
 	}
 	
-	function _getCurl()
+	function sendPushNotification($channel="", $pushType=null, $message, $displayBadge=null)
+	{
+		$c = curl_init();
+		curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($c, CURLOPT_URL, ParseClient::push_url);
+		$push = array("key"=>PARSE_APP_MASTERKEY,"channel"=>$channel, "data"=>array("alert"=>$message) );
+
+		if(isset($pushType) && strlen($pushType) > 0)
+			$push["type"] = $pushType;
+		if(isset($displayBadge))
+			$push["data"]["badge"] = $displayBadge;
+			
+		$postdata = json_encode( $push );	
+		curl_setopt($c, CURLOPT_POSTFIELDS, $postdata );
+		curl_setopt($c, CURLOPT_CUSTOMREQUEST, 'POST'); 
+		curl_setopt($c, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+
+		$response = curl_exec($c);
+		$status = $this->_getStatusCode($c);
+		$json = json_decode($response);
+		
+		if( !property_exists($json, 'result')  || !isset($json->result) || !$json->result)
+			die('push failed, response: '.$response);		
+	}
+	
+	function _getCurl($addCredentials=true)
 	{
 		$c = curl_init();
 		curl_setopt($c, CURLOPT_TIMEOUT, 15);
 		curl_setopt($c, CURLOPT_USERAGENT, 'PHP Parse Client/0.1');
 		curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($c, CURLOPT_USERPWD, PARSE_APPLICATION_ID . ':' . PARSE_APP_MASTERKEY);
+		if($addCredentials)
+			curl_setopt($c, CURLOPT_USERPWD, PARSE_APPLICATION_ID . ':' . PARSE_APP_MASTERKEY);
 		return $c;
 	}
 	function _getResponse($c)
@@ -79,5 +105,3 @@ class ParseClient
 		return json_decode($response);
 	}
 }
-
-?>
