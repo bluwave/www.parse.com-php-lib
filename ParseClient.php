@@ -1,4 +1,4 @@
-<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+<?php 
 
 define('PARSE_APPLICATION_ID', '<your app id>');
 define('PARSE_APP_MASTERKEY', '<your master key>');
@@ -105,3 +105,5 @@ class ParseClient
 		return json_decode($response);
 	}
 }
+
+?>
